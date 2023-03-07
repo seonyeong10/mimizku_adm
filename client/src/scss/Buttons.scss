@@ -1,0 +1,131 @@
+@use 'utils' as ut;
+
+/** Buttons */
+button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 11px 16px;
+    gap: 8px;
+
+    height: 40px;
+
+    border-radius: 50px;
+    
+    font-weight: 600;
+    cursor: pointer;
+    
+    &.cmm_filled_button {
+        color: ut.$wht;
+        background: ut.$blk;
+    }
+    &.cmm_outlined_button {
+        border: 1px solid ut.$gry600;
+        background: none;
+    }
+
+    &.grid {
+        // margin: 0px 0 8px calc(100% - 100px);
+        border-radius: 0px;
+    }
+}
+
+/** Inputs */
+input[type='checkbox'], input[type='radio'] {
+    display: none;
+}
+input[type='checkbox'] + label {
+    background: url('http://localhost:3000/images/unchecked.svg') left no-repeat;
+    padding: 10px 20px;
+}
+input[type='checkbox']:checked + label {
+    background: url('http://localhost:3000/images/checked.svg') left no-repeat;
+}
+input[type='radio'] + label {
+    background: url('http://localhost:3000/images/radio_org.svg') left no-repeat;
+    padding: 10px 20px;
+}
+input[type='radio']:checked + label {
+    background: url('http://localhost:3000/images/radio_chk.svg') left no-repeat;
+}
+
+
+.in_txt_cmm {
+    box-sizing: border-box;
+    padding: 11px 16px;
+    border: 1px solid ut.$gry600;
+}
+.in_txt_small {
+    box-sizing: border-box;
+    padding: 7px 16px;
+    border: 1px solid ut.$gry600;
+}
+input[type='date'] {
+    padding: 7px 16px;
+    border: 1px solid ut.$gry600;
+}
+textarea {
+    padding: 10px;
+    width: calc(100% - 153px); // span 111 - gap 20 - txt 20 - txt border 2
+    resize: none;
+
+    border: 1px solid ut.$gry600;
+}
+
+/* number +- */
+.number {
+    display: inline-flex;
+    input {
+        width: 4em;
+        padding: 7px 10px;
+        &:focus {
+            outline: none;
+        }
+
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+    }
+
+    .icon_wrap {
+        border: 1px solid ut.$gry600;
+        border-left: none;
+
+        display: flex;
+        flex-direction: column;
+    
+        button {
+            background: none;
+            border-radius: 0;
+            border: none;
+    
+            padding: 1px 10px;
+            height: 50%;
+
+            cursor: pointer;
+    
+            &.add {
+                border-bottom: 1px solid ut.$gry600;
+                background: url('http://localhost:3000/images/add_black.svg') center no-repeat;
+            }
+            &.diff {
+                background: url('http://localhost:3000/images/diff.svg') center no-repeat;
+            }
+        }
+    }
+}
+
+.cmm_outlined_dropbox {
+    padding: 7px 16px;
+
+    border: 1px solid ut.$gry600;
+}
+
+.cmm_minimal_dropbox {
+    font-family: 'SF Pro Text';
+    font-size: 14px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border: none;
+}

@@ -1,0 +1,30 @@
+@use 'utils' as ut;
+
+#login {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    /** Logo & inputs */
+    .enter_wrap {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+    /** Button */
+    .login_button_wrap {
+        width: 218px ;
+        button {
+            width: 100%;
+        }
+    }
+}

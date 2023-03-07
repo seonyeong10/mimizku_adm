@@ -1,0 +1,9 @@
+{
+    "host": "localhost",
+    "user": "fukuro",
+    "password": "fukuro",
+    "port": "3306",
+    "database": "fukuro",
+    "connectionLimit": 10,
+    "multipleStatements": true
+}

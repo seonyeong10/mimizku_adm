@@ -1,0 +1,52 @@
+@use 'utils' as ut;
+
+.search_wrap {
+    display: flex;
+    flex-direction: column;
+    padding: 15px 20px;
+    gap: 15px;
+
+    border: 1px solid ut.$gry600;
+
+    div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        &:nth-of-type(1) {
+            padding: 0 0 15px;
+        }
+
+        &.keyword_wrap {
+            border-bottom: 1px solid ut.$gry600;
+        }
+
+        label.keyword {
+            display: flex;
+            align-items: center;
+            input[type='text'] {
+                border: none;
+                &:focus {
+                    outline: none;
+                }
+            }
+        }
+
+        &.select_wrap {
+            justify-content: flex-start;
+            span {
+                width: 70px;
+            }
+            .bundle {
+                margin-left: 36px;
+                padding: 0;
+
+                gap: 20px;
+                flex-wrap: wrap;
+
+                span {
+                    width: auto;
+                }
+            }
+        }
+    }
+}

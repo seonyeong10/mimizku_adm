@@ -1,0 +1,18 @@
+@use 'utils' as ut;
+
+#left {
+    background: ut.$blk;
+    width: 100px;
+    min-height: 100vh;
+    max-height: 100%;
+    ul {
+        padding: 0;
+        li {
+            padding: 12px 22px;
+
+            * {
+                color: ut.$wht;
+            }
+        }
+    }
+}

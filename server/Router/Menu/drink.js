@@ -1,0 +1,513 @@
+const request = require("request");
+const express = require("express");
+const multer = require('multer');   //파일 업로드
+const maria = require('mysql');
+const mariadb = require('../Common/db_service');
+const router = express.Router();
+
+// 파일 설정
+const multerUpload = multer({
+    storage: multer.diskStorage({
+        destination: function (req, file, callback) {
+            callback(null, '/files/menu');
+        },
+        filename: function (req, file, callback) {
+            callback(null, new Date().valueOf() + path.extname(file.originalname));
+        }
+    })
+}).fields([{name:'img_hot'}, {name:'img_iced'}, {name:'img_food'}, {name:'img_goods'}]);   // 단일 파일 = single , 여러 파일 = array
+
+// DB 연결
+/*
+const connection = maria.createConnection({
+    host     : 'localhost',
+    user     : 'fukuro',
+    password : 'fukuro',
+    database : 'fukuro',
+    multipleStatements: true    // 여러 쿼리를 ';'를 기준으로 한번에 보낼 수 있게한다.
+});
+*/
+
+// 메뉴 등록
+router.post('/:category', multerUpload, (req, res) => {
+    // filename : req.file.filename
+    const category = req.params.category;
+    const id = 'M' + Date.now();
+    const tempArr = req.body.temp?.split(',') ?? [2];
+    // let fileIds = [];
+    const menuInfo = {
+        id : id
+        ,main_clas : category
+        ,sub_clas : req.body.sub_clas
+		// ,pic : ''
+        ,nm : req.body.nm
+        ,nm_eng : req.body.nm_eng
+        ,volume : req.body.volume
+        ,temp : req.body.temp
+        ,expl : req.body.expl
+        ,add_expl : req.body.add_expl
+		,dt_start : req.body.dt_start
+        ,dt_end : req.body.dt_end ?? '2999-12-31'
+        ,yn_use : 'Y'
+        ,yn_season : req.body.yn_season ?? 'N'
+        ,yn_recomm : req.body.yn_recomm ?? 'N'
+        ,allergy : req.body.allergy
+		,dt_in : new Date()
+		// ,dt_up : null
+		// ,id_CATEGORY : null
+        ,id_EMPLOYEE : '12345'
+    };
+
+    let menuDetail = [];
+    let fileInfo = [];
+    for(const i of tempArr) {
+        // const key = i === '0' ? 'hot' : 'iced';
+        let key = category;
+        switch(i) {
+            case 0 : key = 'hot'; break;
+            case 1 : key = 'iced'; break;
+        }
+        const id_FILE = 'F' + Date.now() + i;
+        menuDetail.push({
+            id_MENU : id,
+            temp : i,
+            fee : req.body[`fee_${key}`],
+            calorie : req.body[`calorie_${key}`],
+            carbon : req.body[`carbon_${key}`],
+            sugar : req.body[`sugar_${key}`],
+            salt : req.body[`salt_${key}`],
+            protein : req.body[`protein_${key}`],
+            fat : req.body[`fat_${key}`],
+            colesterol : req.body[`colesterol_${key}`],
+            trans_fat : req.body[`trans_fat_${key}`],
+            ploy_fat : req.body[`ploy_fat_${key}`],
+            caffeine : req.body[`caffeine_${key}`],
+            id_FILE : id_FILE,
+        });
+        if(req.files[`img_${key}`]) {
+            fileInfo.push({
+                id : id_FILE,
+                dir : '/files/menu',
+                or_name : req.files[`img_${key}`][0].originalname,
+                sv_name : req.files[`img_${key}`][0].filename,
+                board_id : id
+            });
+        }
+    }
+
+    const optInfo = {
+        id_MENU : id
+        ,bean : req.body.bean
+        ,bean_cnt : req.body.bean_cnt
+        ,syrup : req.body.syrup
+        ,syrup_cnt : req.body.syrup_cnt
+        ,base : req.body.base
+        // ,base_cnt : null
+        // ,ice_amt : null
+        ,milk : req.body.cream
+        ,cream : req.body.cream
+        // ,cream_amt : null
+        ,drizz : req.body.drizz
+        // ,drizz_amt : null
+    };
+
+    let menuSql = 'INSERT INTO MENU SET ? ; ';
+    menuSql = maria.format(menuSql, menuInfo);
+    let detailSql = '', fileSql = '';
+    for(let i=0 ; i < tempArr.length ; i++) {
+        const detail = 'INSERT INTO MENU_DETAIL SET ? ; ';
+        detailSql += maria.format(detail, menuDetail[i]);
+        if(fileInfo[i]) {
+            const file = 'INSERT INTO FILE SET ? ; ';
+            fileSql += maria.format(file, fileInfo[i]);
+            console.log(fileInfo[i]);
+        }
+    }
+    let optSql = '';
+    if(category === 'drink') {
+        optSql = 'INSERT INTO TYPES SET ? ; ';
+        optSql = maria.format(optSql, optInfo);
+    }
+
+    // console.log(menuSql);
+    // console.log(detailSql);
+    // console.log(fileSql);
+    // console.log(optSql);
+
+    mariadb.getConnection((conn) => {
+        conn.query(menuSql + detailSql + fileSql + optSql, (err, rows) => {
+            if(err) {
+                console.log('error excute query : ' + err);
+            }
+            
+            res.send({ message : 'success', rows: rows });
+        });
+        
+        conn.release();
+    });
+    
+});
+
+// 메뉴 목록 조회
+router.get('/:category', (req, res) => {
+    const category = req.params.category;
+    const searchWord = ['sub_clas', 'yn_season', 'yn_recomm', 'dt_start', 'dt_end'];
+    const params = [];  // 파라미터
+    
+    // ? 개수
+    let clasArr = '', len = req.query.sub_clas?.length ?? 0;
+    for(let i=0 ; i < len ; i++) {
+        clasArr += ', ?';
+    }
+
+    params.push(category);
+    searchWord.map(col => {
+        if(Array.isArray(req.query.col)) {
+            params.concat(req.query[col] ?? '');
+        } else {
+            params.push(req.query[col] ?? '');
+        }
+    });
+
+    let sql = 'SELECT  ROW_NUMBER () OVER(ORDER BY m.id DESC) rn \n'
+            + ', m.id \n'
+            + ', m.sub_clas \n'
+            + ', f.id  AS pic \n'
+            + ", IF(md.temp = 0, 'HOT', 'ICED') temp \n"
+            + ', m.nm \n'
+            + ', m.nm_eng \n'
+            + ", FORMAT(md.fee, N'#,0') fee \n"
+            + ', DATE_FORMAT(m.dt_start, "%Y-%m-%d") dt_start \n'
+            + ', DATE_FORMAT(m.dt_end, "%Y-%m-%d") dt_end \n'
+            // + ', m.yn_use ' 
+            + ', m.yn_season \n' 
+            + ', m.yn_recomm \n' 
+            + 'FROM MENU m \n'
+            // + 'LEFT OUTER JOIN FILE f ON m.id = f.board_id '
+            + 'LEFT OUTER JOIN MENU_DETAIL md ON md.id_MENU = m.id \n'
+            + 'LEFT OUTER JOIN FILE f ON md.id_FILE = f.id \n'
+            + "WHERE main_clas = ? \n";
+    if(params[1] !== '') {
+        sql += "AND sub_clas IN ('' " + clasArr + " ) \n";
+    } else {
+        sql += "AND sub_clas LIKE CONCAT('%',NVL(?, ''),'%') \n";
+    }
+    sql += "  AND yn_season LIKE CONCAT('%', NVL(?, ''), '%') \n"
+        + "   AND yn_recomm LIKE CONCAT('%', NVL(?, ''), '%') \n"
+        + "   AND dt_start LIKE CONCAT('%', NVL(?, ''), '%') \n"
+        + "   AND dt_end LIKE CONCAT('%', NVL(?, ''), '%') \n"
+        + "   AND yn_use = 'Y' \n"
+        // + "   AND yn_use LIKE CONCAT('%', NVL(?, ''), '%') \n"
+        + 'ORDER BY rn  \n'
+        + 'LIMIT ?, ?   ;';
+
+    params.push(Number(req.query.page) * Number(req.query.perPage)); params.push(Number(req.query.perPage)); 
+
+    console.log(maria.format(sql, params));
+    // console.log(params);
+    
+    mariadb.getConnection(conn => {
+        conn.query(sql, params, (err, rows) => {
+            if(err) {
+                console.log('error get menu list : ' + err);
+                return;
+            }
+            res.send({ message: 'success', rows: rows});
+        }); 
+        conn.release();
+    });
+
+});
+
+// 메뉴 상세 조회
+router.get('/:category/:id', (req, res) => {
+    console.log(req.params.category);
+    console.log(req.params.id);
+    const sql1 = 'SELECT m.id                         				   '
+              + ' 	  ,m.sub_clas                                      '
+              + ' 	  ,m.nm                                            '
+              + ' 	  ,m.nm_eng                                        '
+              + ' 	  ,NVL(m.volume, \'\') volume                      '
+              + ' 	  ,NVL(m.temp  , \'\') temp                        '
+              + ' 	  ,DATE_FORMAT(m.dt_start, "%Y-%m-%d") dt_start    '
+              + ' 	  ,DATE_FORMAT(m.dt_end, "%Y-%m-%d") dt_end        '
+              + ' 	  ,NVL(m.expl      , \'\') expl                    '
+              + ' 	  ,NVL(m.add_expl  , \'\') add_expl                '
+              + ' 	  ,NVL(m.yn_season , \'\') yn_season               '
+              + ' 	  ,NVL(m.yn_recomm , \'\') yn_recomm               '
+              + ' 	  ,NVL(m.allergy   , \'\') allergy                 '
+              + ' 	  ,NVL(t.bean      , \'\') bean                    '
+              + ' 	  ,NVL(t.bean_cnt  , \'\') bean_cnt                '
+              + ' 	  ,NVL(t.syrup     , \'\') syrup                   '
+              + ' 	  ,NVL(t.syrup_cnt , \'\') syrup_cnt               '
+              + ' 	  ,NVL(t.milk      , \'\') milk                    '
+              + ' 	  ,NVL(t.base      , \'\') base                    '
+              + ' 	  ,NVL(t.cream     , \'\') cream                   '
+              + ' 	  ,NVL(t.drizz     , \'\') drizz                   '
+              + '  FROM MENU m                                         '
+              + '  LEFT JOIN TYPES t ON m.id = t.id_MENU               '
+              + ' WHERE m.id = ? ;';
+    const sql2 = 'SELECT md.temp, NVL(md.calorie, 0) calorie, NVL(md.salt, 0) salt, NVL(md.protein, 0) protein,'
+               + '		 NVL(md.fat, 0) fat, NVL(md.sugar, 0) sugar, NVL(md.caffeine, 0) caffeine, f.id as pic,'
+               + '		 NVL(md.fee, 0) fee                             '
+               + '  FROM MENU m                                         '
+               + '  LEFT JOIN MENU_DETAIL md ON md.id_MENU = m.id       '
+               + '  LEFT JOIN FILE f ON md.id_FILE = f.id               '
+               + ' WHERE m.id = ? ;                                     ';
+    
+    mariadb.getConnection(conn => {
+        conn.query(sql1 + sql2, [req.params.id, req.params.id], (err, rows) => {
+            if(err) {
+                console.log('error menu info : ' + err.stack);
+            }
+            res.send({
+                message : 'success',
+                rows : rows
+            });
+        });
+        conn.release();
+    });
+
+});
+
+// 메뉴 수정 file ver
+router.post('/:category/:id', multerUpload, (req, res) => {
+    const category = req.params.category;   // 메뉴 id
+    const key = req.params.id;   // 메뉴 id
+    const tempArr = req.body.temp !== '' ? req.body.temp.split(',') : [2];
+    console.log(tempArr);
+
+    const menuInfo = [
+        req.body.sub_clas
+        ,req.body.nm
+        ,req.body.nm_eng
+        ,req.body.volume
+        ,req.body.temp
+		,req.body.dt_start
+        ,req.body.dt_end
+        ,req.body.expl
+        ,req.body.add_expl
+        ,req.body.yn_season
+        ,req.body.yn_recomm
+        ,req.body.allergy
+        ,'12345'
+        ,req.body.id
+    ];
+
+    let menuDetail = [];
+    let fileInfo = [];
+    for(const i of tempArr) {
+        let key = category;
+        switch(i) {
+            case 0 : key = 'hot'; break;
+            case 1 : key = 'iced'; break;
+        }
+        let id_FILE = 'F' + Date.now() + i;
+        if(!req.files[`img_${key}`]) id_FILE = req.body[`pic_${key}`];
+        menuDetail.push({
+            id_MENU : req.body.id,
+            temp : i,
+            fee : req.body[`fee_${key}`],
+            calorie : req.body[`calorie_${key}`],
+            carbon : req.body[`carbon_${key}`],
+            sugar : req.body[`sugar_${key}`],
+            salt : req.body[`salt_${key}`],
+            protein : req.body[`protein_${key}`],
+            fat : req.body[`fat_${key}`],
+            colesterol : req.body[`colesterol_${key}`],
+            trans_fat : req.body[`trans_fat_${key}`],
+            ploy_fat : req.body[`ploy_fat_${key}`],
+            caffeine : req.body[`caffeine_${key}`],
+            id_FILE : id_FILE,
+        });
+        if(req.files[`img_${key}`]) {
+            fileInfo.push({
+                id : id_FILE,
+                dir : '/files/menu',
+                or_name : req.files[`img_${key}`][0].originalname,
+                sv_name : req.files[`img_${key}`][0].filename,
+                board_id : req.body.id
+            });
+        }
+    }
+
+    const optInfo = [
+        req.body.bean
+        ,req.body.bean_cnt
+        ,req.body.syrup
+        ,req.body.syrup_cnt
+        ,req.body.base
+        ,req.body.cream
+        ,req.body.cream
+        ,req.body.drizz
+        ,req.body.id
+    ];
+
+    let sqlMenu = 'UPDATE MENU				  \n'
+                + '   SET sub_clas = NVL(?, \'\')        \n'
+                + '	   ,nm = NVL(?, \'\')                \n'
+                + '	   ,nm_eng = NVL(?, \'\')            \n'
+                + '	   ,volume = NVL(?, \'\')            \n'
+                + '	   ,temp = NVL(?, \'\')              \n'
+                + '	   ,dt_start = NVL(?, \'\')          \n'
+                + '	   ,dt_end = NVL(?, \'\')            \n'
+                + '	   ,expl = NVL(?, \'\')              \n'
+                + '	   ,add_expl = NVL(?, \'\')          \n'
+                + '	   ,yn_season = NVL(?, \'\')         \n'
+                + '	   ,yn_recomm = NVL(?, \'\')         \n'
+                + '	   ,allergy = NVL(?, \'\')           \n'
+                + '	   ,dt_up = sysdate()     \n'
+                + '	   ,id_EMPLOYEE = NVL(?, \'\')       \n'
+                + ' WHERE id = NVL(?, \'\') ;            \n';
+    let sqlDetail = 'INSERT INTO MENU_DETAIL SET ? ON DUPLICATE KEY \n'
+                  + ' UPDATE calorie = VALUES(calorie)      \n'
+                  + ' 	    ,salt = VALUES(salt)            \n'
+                  + ' 	    ,protein = VALUES(protein)      \n'
+                  + ' 	    ,fat = VALUES(fat)              \n'
+                  + ' 	    ,sugar = VALUES(sugar)          \n'
+                  + ' 	    ,caffeine = VALUES(caffeine)    \n'
+                  + ' 	    ,fee = VALUES(fee)              \n'
+                  + ' 	    ,id_FILE = VALUES(id_FILE) ;    \n'
+    let sqlOption = '';
+    let sqlFile = '';
+    let sqlDetail2 = '';
+                  
+    sqlMenu = maria.format(sqlMenu, menuInfo);
+    for (let i = 0; i < tempArr.length; i++) {
+        sqlDetail2 += maria.format(sqlDetail, menuDetail[i]);
+        if (fileInfo[i]) {
+            const file = 'INSERT INTO FILE SET ? ON DUPLICATE KEY UPDATE sv_name = VALUES(sv_name), or_name = VALUES(or_name) ; ';
+            sqlFile += maria.format(file, fileInfo[i]);
+        }
+    }
+    if(category === 'drink') {
+        sqlOption = ' UPDATE TYPES			\n'
+                  + '    SET bean = NVL(?, \'\')       \n'
+                  + '       ,bean_cnt = NVL(?, \'\')   \n'
+                  + ' 	    ,syrup = NVL(?, \'\')      \n'
+                  + ' 	    ,syrup_cnt = NVL(?, \'\')  \n'
+                  + ' 	    ,milk = NVL(?, \'\')       \n'
+                  + ' 	    ,cream = NVL(?, \'\')      \n'
+                  + ' 	    ,base = NVL(?, \'\')       \n'
+                  + ' 	    ,drizz = NVL(?, \'\')      \n'
+                  + '  WHERE id_MENU = NVL(?, \'\');   \n';
+        sqlOption = maria.format(sqlOption, optInfo);
+    }
+
+    // console.log(sqlMenu);
+    // console.log(sqlDetail2);
+    console.log(sqlFile);
+    // console.log(sqlOption);
+    
+    
+    mariadb.getConnection(conn => {
+        conn.query(sqlMenu + sqlDetail2 + sqlOption + sqlFile, (err, rows) => {
+            if(err) {
+                console.log('error excute query : ' + err);
+            }
+
+            res.send({ message : 'success', rows: rows });
+        });
+
+        conn.release();
+    });
+    
+    // res.send({ message : 'success' });
+});
+
+// 메뉴 수정 no file ver
+router.put('/:category/:id', (req, res) => {
+    const key = req.params.id;   // 메뉴 id
+    const reqKeys = Object.keys(req.body);
+    const columns = {
+        menu : ['sub_clas', 'nm', 'nm_eng', 'volume', 'fee', 'temp', 'expl', 'add_expl', 'dt_start', 'dt_end', 'yn_use', 'yn_season', 'yn_recomm', 'id_EMPLOYEE'],
+        file : ['or_name', 'sv_name'],
+        opt : ['bean', 'bean_cnt', 'syrup', 'syrup_cnt', 'base', 'base_cnt' , 'ice_amt' , 'milk' , 'cream' , 'cream_amt' , 'drizz' , 'drizz_amt'],
+        nut : ['calorie', 'salt', 'sugar', 'protein', 'fat', 'caffeine', 'allergy']
+    };
+
+    req.body.volume = req.body.volume?.join();
+    req.body.temp = req.body.temp?.join();
+    req.body.allergy = req.body.allergy?.join();
+
+    let sql1 = 'UPDATE MENU SET dt_in = sysdate() ';
+    let items1 = [];
+    reqKeys.map(el => {
+        if(columns.menu.includes(el)) {
+            sql1 += `, ${el} = ? `;
+            items1.push(req.body[el]);
+        }
+    });
+    sql1 += ` WHERE id = ? ; `;
+    items1.push(key);
+    sql1 = maria.format(sql1, items1);
+
+    let sql2 = '';
+    let items2 = [];
+    reqKeys.map((el, idx) => {
+        if(columns.opt.includes(el)) {
+            sql2 += items2.length == 0 ?  `UPDATE TYPES SET ${el} = ? ` : `, ${el} = ? `;
+            items2.push(req.body[el]);
+        }
+    });
+    if(sql2.length > 1) {
+        sql2 += ` WHERE id_MENU = ? ; `;
+        items2.push(key);
+        sql2 = maria.format(sql2, items2);
+    }
+
+    let sql3 = '';
+    let items3 = [];
+    reqKeys.map(el => {
+        if(columns.nut.includes(el)) {
+            sql3 += items3.length == 0 ?  `UPDATE NUTRIENT SET ${el} = ? ` : `, ${el} = ? `;
+            items3.push(req.body[el]);
+        }
+    });
+    if(sql3.length > 1) {
+        sql3 += ` WHERE id_MENU = ? ; `;
+        items3.push(key);
+        sql3 = maria.format(sql3, items3);
+    }
+
+    let sql4 = 'UPDATE NUTRIENT ut							'	
+                + 'SET calorie = (                              '
+                + '		SELECT (protein*4 + sugar*4 + fat*9)    '
+                + '		FROM NUTRIENT                           '
+                + '		WHERE id_MENU = ?                       '
+                + '		)                                       '
+                + 'WHERE id_MENU = ?;                           ';
+    const items4 = [key, key];
+    sql4 = maria.format(sql4, items4);
+
+    /*
+    mariadb.getConnection(conn => {
+        conn.query(sql1 + sql2 + sql3 + sql4, (err, rows) => {
+            if(err) {
+                console.log('error excute query : ' + err);
+            }
+
+            res.send({ message : 'success', rows: rows });
+        });
+
+        conn.release();
+    });
+    */
+});
+
+// 삭제
+router.delete('/:category/:key', (req, res) => {
+    const key = req.params.key;
+    const sql = 'UPDATE MENU SET yn_use = "N" WHERE id = ?; ';
+    
+    mariadb.getConnection(conn => {
+        conn.query(sql, key, (err, rows) => {
+            if(err)
+                console.log('error excute query : ' + err);
+            res.send({ message : 'success', rows: rows });
+        });
+        conn.release();
+    });
+})
+
+module.exports = router;
