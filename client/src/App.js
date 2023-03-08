@@ -33,10 +33,6 @@ function App() {
   const goPage = (type, data='') => {
     refetch({ type : type, data : data});
   }
-
-  if(!auth.authenticated) {
-    console.log();
-  }
   
   return (
     <BrowserRouter>
