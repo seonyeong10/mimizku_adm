@@ -115,5 +115,11 @@
         align-items: center;
         padding: 0 4px;
         gap: 20px;
+
+        img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+        }
     }
 }

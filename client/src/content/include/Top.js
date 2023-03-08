@@ -1,13 +1,12 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import 'scss/Top.scss';
 import { useEffect } from 'react';
 import api from 'content/utils/api'; // axios interceptor 호출
+import { useState } from 'react';
 
 export default function Top(props) {
     const curr = window.location.pathname.split('/')[1];
-    const navigate = useNavigate();
-    const auth = useSelector(state => state.authToken);
+    const [userInfo, setInfo] = useState({});
 
     // how to use in service
     const getUserInfo = async () => {
@@ -15,11 +14,14 @@ export default function Top(props) {
     }
 
     useEffect(() => {
-        getUserInfo().catch(rej => {
-            console.log(rej);
-        });
+        getUserInfo()
+        .then(resolve => {
+                setInfo(resolve.data.user);
+            })
+            .catch(reject => {
+                console.log(reject);
+            });
     }, []);
-
 
     return(
         <div id='top'>
@@ -35,8 +37,8 @@ export default function Top(props) {
                 </div>
             </div>
             <div className='user_wrap'>
-                <img src='/images/face.svg' alt='user'/>
-                <span>ADMINISTRATOR</span>
+                <img src={userInfo?.pic ? `/api/image/${userInfo.pic}` : '/images/face.svg'} alt='user'/>
+                <span>{userInfo?.name ?? 'anonymous'}</span>
                 <Link to='/logout'><img src='/images/logout.svg' alt='logout'/></Link>
             </div>
         </div>

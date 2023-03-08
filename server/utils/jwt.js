@@ -7,10 +7,11 @@ const TOKEN_INVALID = -4; // 유효하지 않은 토큰
 
 module.exports = {
     sign: async (user) => {
-        console.log('jwt sign ', user);
+        // console.log('jwt sign ', user);
         const payload = {
             sub: user.id,
             name: user.name,
+            pic: user.pic,
         };
 
         const result = {
@@ -22,7 +23,7 @@ module.exports = {
     },
     
     verify: async (token) => {
-        console.log('jwt verify ', token);
+        // console.log('jwt verify ', token);
         try {
             // return jwt.verify(token, process.env.JWT_SECRET);
             return jwt.verify(token, secretKey);
