@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const maria = require('mysql');
 const mariadb = require('../Common/db_service');
 const jwt = require("../../utils/jwt");
+const authUtil = require("../../utils/auth");
 
 function dbQueryAsync(query) {
     return new Promise((resolve, reject) => {
@@ -17,8 +18,15 @@ function dbQueryAsync(query) {
     });
 }
 
+// 로그인 유저의 정보를 반환한다.
+function sendUserInfo() {
+    console.log(1234);
+    // console.log(user);
+}
+
+// /api/user/login
 router.post('/login', async (req, res) => {
-    const client = req.body;
+    const client = JSON.parse(req.body.data);
 
     if(client.password === "") {
         res.send({message: '-1'});
@@ -31,7 +39,7 @@ router.post('/login', async (req, res) => {
     const user = await dbQueryAsync(sql);
     // console.log('user ',user);
     if(!user) {
-        res.send({message: '-2'});
+        res.send({message: '-2'}); // 조회된 사용자 없음
         return;
     }
     // Access Token 발급
@@ -46,11 +54,13 @@ router.post('/login', async (req, res) => {
 
 // 로그인 유저 정보 조회
 router.get("/loginInfo", async (req, res) => {
+    /* 
     const accessToken = req.headers.authorization?.split(' ')[1] ?? '';
     
     // 시크릿키를 함께 넘겨 확인한다
-    // const user = await jwt.verify(accessToken, secretKey.secretKey);
+    const user = await jwt.verify(accessToken, secretKey.secretKey);
     const user = await jwt.verify(accessToken);
+    
     if(user === -3) {
         res.status(419).send({ code: 419, message: '만료된 토큰입니다.' })
         return;
@@ -59,7 +69,9 @@ router.get("/loginInfo", async (req, res) => {
         res.status(401).send({ code: 401, message: '유효하지 않은 토큰입니다.' });
         return;
     }
-    res.send({ user: user });
+    res.send({ user: user }); 
+    */
+    await authUtil.checkToken(req, res);
 });
 
 // Refresh Token

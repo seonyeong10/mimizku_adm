@@ -1,6 +1,5 @@
-import { useCookies } from 'react-cookie';
 import axiosInstance from './api';
-import { SET_TOKEN } from '../../store/Auth';
+import { SET_TOKEN } from 'store/Auth';
 
 /** Access Token 만료 확인 및 Refresh Token 발급 */
 const setUpInterceptor = (store) => {
@@ -30,16 +29,21 @@ const setUpInterceptor = (store) => {
         async (err) => {
             const originalConfig = err.config;
             // console.log(err);
-            if(err.response.data.code === 401) {
-                console.log('code 401');
-                console.log(err.response.data.message);
-            } else if(err.response.data.code === 419) {
+            if(err.response.status === 401) {
+                // console.log('code 401');
+                // console.log(err.response.data.message);
+                alert('로그인 후 이용해주세요.');
+                window.location.replace('/login');
+            } else if(err.response.status === 419) {
                 // 재발급
                 try {
                     console.log('reissue!!');
+
                     const rs = await axiosInstance.post("/api/user/reissue");
                     const accessToken = rs.data.access_token;
-                    console.log('accessToken >>> ', accessToken);
+                    
+                    // console.log('accessToken >>> ', accessToken);
+
                     dispatch(SET_TOKEN(accessToken));
                     return axiosInstance(originalConfig);
                 } catch(e) {
