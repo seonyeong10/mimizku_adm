@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { logoutUser } from 'content/utils/users';
+import { logoutUser } from 'content/utils/userLoginAction';
 import { getCookieToken, removeCookieToken } from 'store/Cookie';
 import { DELETE_TOKEN } from 'store/Auth';
 import { useNavigate } from 'react-router-dom';

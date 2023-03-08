@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import 'scss/Login.scss';
-import { loginUser } from 'content/utils/users';
+import { loginUser } from 'content/utils/userLoginAction';
 import { setRefreshToken } from 'store/Cookie';
 import { SET_TOKEN } from 'store/Auth';
 import { useNavigate } from 'react-router-dom';
@@ -18,9 +18,9 @@ export default function Login(props) {
         // input 값 비우기
         setValue({...register, password: ''});
 
+        // console.log(response);
         if(response.status) {
             // 쿠키에 Refresh Toke, store에 Access Token 저장
-            console.log(response);
             const messgae = response.json.message;
             if(messgae === '-1') {
                 alert('비밀번호를 입력해주세요.');
@@ -34,7 +34,8 @@ export default function Login(props) {
 
             return navigate("/");
         } else {
-            console.log(response.json);
+            // console.log(response.json);
+            alert(response.json.message);
         }
     }
 
