@@ -3,9 +3,12 @@ import Title from 'content/view/components/Title';
 import { MenuSearch } from 'content/view/components/Search';
 import { List } from 'content/view/List';
 import { InfoButton, UpdateButton } from 'content/view/components/Buttons';
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { preview, update, erase, createFile } from 'content/utils/form';
 import axios from 'axios';
+import api from 'content/utils/api'; // axios interceptor 호출
+import { useSelector } from 'react-redux';
+import { formReducer } from 'content/utils/formReducer';
 
 // 상세정보 컴포넌트
 function reducer(state, action) {
@@ -18,16 +21,14 @@ function reducer(state, action) {
 
 // update viewForm data
 // WRITE: text,radio,textarea,date | APPEND: checkbox | SUBMIT: submit
-function menuReducer(state, action) {
+/* function formReducer(state, action) {
     const name = action.data?.name;
     let value = action.data?.value;
     let count;
 
-    console.log(name, value);
+    // console.log(name, value);
     switch(action.type) {
         case 'WRITE'  : 
-            console.log(action.data?.type === 'radio');
-            console.log(!action.data?.checked);
             if(action.data?.type === 'radio' && state[name] === 'Y') {
                 value = 'N';
             }
@@ -49,7 +50,7 @@ function menuReducer(state, action) {
         case 'SUBMIT' : return {}
         default: return {}
     }
-}
+} */
 
 // menu detail form
 function MenuDetail(props) {
@@ -190,10 +191,11 @@ function MenuDetail(props) {
 }
 
 function AddForm(props) {
-    const [data, setData] = useReducer(menuReducer, {});
+    const [data, setData] = useReducer(formReducer, {});
     const [degree, dispatch] = useReducer(reducer, {hot: false, iced: false});
+    const accessToken = useSelector(state => state.authToken.accessToken);
     
-    const onSubmit = (e) => {
+    const onSubmit = () => {
         const formData = new FormData();
         // e.preventDefault();
         const keys = Object.keys(data);
@@ -202,13 +204,13 @@ function AddForm(props) {
             formData.append(key, data[key]);
         });
         console.log('submit!');
-        const entries = formData.entries();
-        for(const pair of entries) {
-            console.log(pair[0], pair[1]);
-        }
+        // const entries = formData.entries();
+        // for(const pair of entries) {
+        //     console.log(pair[0], pair[1]);
+        // }
 
         // console.log(data);
-        createFile(formData, '/api/menu/drink');
+        createFile(formData, '/api/menu/drink', accessToken);
         // document.frm.submit();
     }
     
@@ -419,7 +421,7 @@ function AddForm(props) {
 function ViewForm(props) {
     const [degree, dispatch] = useReducer(reducer, {hot: false, iced: false});
     // modifiy : 수정 , submit : formData에 저장
-    const [item, modify] = useReducer(menuReducer, {});
+    const [item, modify] = useReducer(formReducer, {});
 
     useEffect(() => {
            
@@ -726,15 +728,27 @@ export function DrinkView(props) {
 export function DrinkList(props) {
     const listTit = ['No', '분류', '사진', '온도', '이름', '가격', '시작일', '종료일', '시즌', '추천'];
     const sCtg = ['COFFEE', 'BEVERAGE', 'BLENDING TEA', 'SHAKE&ADE', 'COLD BREW'];
-    const [keyword, search] = useState([{ perPage: 10, page: 0 }]);
+    // const [keyword, search] = useState([{ perPage: 10, page: 0 }]);
+    const [search, dispatch] = useReducer(formReducer, { perPage: 10, page: 0 });
 
     if(props.state.mode === 0) {
         return(
             <div id="body">
                 <Title bigTit='음료' button={props.state} refetch={props.refetch}/>
                 <div className='cmm_list_wrap'>
-                    <MenuSearch ctg={sCtg} search={search} keyword={keyword} />
-                    <List ctg='drink' tit={listTit} search={keyword} setSearch={search} refetch={(type, id) => props.refetch(type, id)}/>
+                    <MenuSearch ctg={sCtg} 
+                                search={ (type, e) => dispatch({type: type, data: {name: e.target.name, value: e.target.value, checked: e.target.checked}}) } 
+                                keyword={search} 
+                    />
+                    <List ctg='drink' 
+                          tit={listTit} 
+                          search={search} 
+                          setSearch={(type, e) => dispatch({
+                            type: type, 
+                            data: {name: e.target.name, value: e.target.value, checked: e.target.checked}}
+                          )} 
+                          refetch={(type, id) => props.refetch(type, id)}
+                    />
                 </div>
             </div>
         );

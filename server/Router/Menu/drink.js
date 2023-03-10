@@ -160,10 +160,9 @@ router.get('/:category', (req, res) => {
     const params = [];  // 파라미터
     const searchClas = []; // 카테고리 검색
 
-    console.log(req.query);
-
     req.query.sub_clas?.forEach(ctg => searchClas.push(ctg));
 
+    const countSql = "SELECT COUNT(id) `all` FROM MENU; ";
     let sql = 'SELECT  ROW_NUMBER () OVER(ORDER BY m.id DESC) rn \n'
             + ', m.id \n'
             + ', m.sub_clas \n'
@@ -180,13 +179,8 @@ router.get('/:category', (req, res) => {
             + 'FROM MENU m \n'
             + 'LEFT OUTER JOIN MENU_DETAIL md ON md.id_MENU = m.id \n'
             + 'LEFT OUTER JOIN FILE f ON md.id_FILE = f.id \n'
-            + "WHERE main_clas = ? \n";
-            + "AND sub_clas " +( searchClas.length > 0 ? " IN ('?') \n" : " = '%%' \n");
-    // if(params[1] !== '') {
-    //     sql += "AND sub_clas IN ('" + searchClas.join("','") + "' ) \n";
-    // } else {
-    //     sql += "AND sub_clas LIKE CONCAT('%',NVL(?, ''),'%') \n";
-    // }
+            + "WHERE main_clas = ? \n"
+            + `AND sub_clas ${searchClas.length > 0 ? " IN (?) \n" : " LIKE CONCAT('%', NVL(?, ''), '%') \n"}\n`;
     sql += "  AND yn_season LIKE CONCAT('%', NVL(?, ''), '%') \n"
         + "   AND yn_recomm LIKE CONCAT('%', NVL(?, ''), '%') \n"
         + "   AND dt_start LIKE CONCAT('%', NVL(?, ''), '%') \n"
@@ -197,24 +191,24 @@ router.get('/:category', (req, res) => {
         + 'LIMIT ?, ?   ;';
 
     params.push(category);
-    params.push(searchClas.join("','"));
+    params.push(searchClas.length > 0 ? searchClas : '');
     searchWord.map(col => params.push(req.query[col] ?? ''));
-    params.push(Number(req.query.page) * Number(req.query.perPage)); params.push(Number(req.query.perPage)); 
+    params.push(Number(req.query.page) * Number(req.query.perPage)); 
+    params.push(Number(req.query.perPage)); 
 
-    console.log(maria.format(sql, params));
+    // console.log(maria.format(sql, params));
     // console.log(params);
     
-    /* mariadb.getConnection(conn => {
-        conn.query(sql, params, (err, rows) => {
+    mariadb.getConnection(conn => {
+        conn.query(countSql + sql, params, (err, rows) => {
             if(err) {
                 console.log('error get menu list : ' + err);
                 return;
             }
-            res.send({ message: 'success', rows: rows});
+            res.send({ message: 'success', all: rows[0][0].all, rows: rows[1]});
         }); 
         conn.release();
-    }); */
-    res.send({message:'test'});
+    });
 });
 
 // 메뉴 상세 조회

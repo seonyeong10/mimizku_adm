@@ -1,4 +1,5 @@
 import 'scss/Search.scss';
+import { ACTION } from 'content/common/action';
 
 function search(state, setState, e, isArr = false) {
     const checked = ['checkbox', 'radio'].includes(e.target.type) ? e.target.checked : true;
@@ -108,26 +109,22 @@ export function MenuSearch(props) {
                         props.ctg.map(el => {
                             return(
                                 <span>
-                                    <input id={`ctg_${el}`} type="checkbox" name='sub_clas' value={el} onChange={e => search(props.keyword, props.search, e, true)}/>
+                                    <input id={`ctg_${el}`} type="checkbox" name='sub_clas' value={el} onChange={e => props.search(ACTION.APPEND, e)}/>
                                     <label htmlFor={`ctg_${el}`}>{el}</label>
                                 </span>
                             )
                         })
                     }
-                    {/* <input id="ctg_coffee" type="checkbox" name='sub_clas' value='COFFEE' onChange={e => search(props.keyword, props.search, e, true)}/>
-                    <label htmlFor="ctg_coffee">
-                        COFFEE
-                    </label> */}
                 </div>
             </div>
             <div className="select_wrap">
                 <span>Options</span>
                 <div className='bundle'>
-                    <input id="opt_season" type="checkbox" name='yn_season' value='Y' onChange={e => search(props.keyword, props.search, e)}/>
+                    <input id="opt_season" type="checkbox" name='yn_season' value='Y' onChange={e => props.search(ACTION.WRITE, e)}/>
                     <label htmlFor="opt_season">
                         SEASON
                     </label>
-                    <input id="opt_MD" type="checkbox" name='yn_recomm' value='Y' onChange={e => search(props.keyword, props.search, e)}/>
+                    <input id="opt_MD" type="checkbox" name='yn_recomm' value='Y' onChange={e => props.search(ACTION.WRITE, e)}/>
                     <label htmlFor="opt_MD">
                         MD pick
                     </label>
@@ -137,11 +134,11 @@ export function MenuSearch(props) {
                 <span>기간</span>
                 <div className='bundle'>
                     <label htmlFor="opt_season">
-                        <input type="date" name="dt_start" onChange={e => search(props.keyword, props.search, e)}/>
+                        <input type="date" name="dt_start" onChange={e => props.search(ACTION.WRITE, e)}/>
                     </label>
                     ~
                     <label htmlFor="opt_MD">
-                        <input type="date" name="dt_end" onChange={e => search(props.keyword, props.search, e)} />
+                        <input type="date" name="dt_end" onChange={e => props.search(ACTION.WRITE, e)} />
                     </label>
                 </div>
             </div>

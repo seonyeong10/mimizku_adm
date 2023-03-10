@@ -3,14 +3,16 @@ import axios from 'axios';
 import { useAsyncSkip } from 'content/utils/useAsync';
 
 export function ListFooter(props) {
-    if(props.count < props.search[0].perPage) {
+    console.log(props);
+    if(props.count < props.perPage) {
         return null;
     }
 
     const pages = [];
-    const currPage = props.search[0].page;
-    const perPage = props.search[0].perPage;
+    const currPage = props.page;
+    const perPage = props.perPage;
     const prevPage = (parseInt(currPage/5) - 1) * 5, nextPage = (parseInt(currPage/5) + 1) * 5; 
+
 
     for(let i=(nextPage-4) ; i <= nextPage ; i++) {
         pages.push(parseInt(i));
@@ -64,10 +66,9 @@ async function getList(url) {
 
 export function List(props) {
     const path = window.location.pathname;
-    // console.log(props.search[0]);
     const getList = async () => {
         const response = await axios.get(`/api/${path}`, {
-            params: props.search[0]
+            params: props.search
         });
         return response.data;
     }
@@ -129,7 +130,7 @@ export function List(props) {
                 </ul>
             </div>
         );
-    if (!items || items.rows.length < 1)
+    if (!items || items.rows?.length < 1)
         return (
             <div className='cmm_list'>
                 <ul>
@@ -171,7 +172,11 @@ export function List(props) {
                     })
                 }
             </ul>
-            <ListFooter count={state?.data?.rows.length ?? 0} search={props.search} setSearch={props.setSearch}/>
+            <ListFooter count={state?.data?.all ?? 0} 
+                        page={props.search.page} 
+                        perPage={props.search.perPage} 
+                        setSearch={props.setSearch}
+            />
         </div>
     );
 }
