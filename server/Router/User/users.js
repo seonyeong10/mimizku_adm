@@ -37,6 +37,11 @@ router.post('/login', async (req, res) => {
     sql = maria.format(sql, [client.id, client.password]);
 
     const user = await dbQueryAsync(sql);
+    /* const user = {
+        id: '202303001',
+        name: '미야와키 사쿠라',
+        id_FILE: null,
+    }; */
     // console.log('user ',user);
     if(!user) {
         res.send({message: '-2'}); // 조회된 사용자 없음
@@ -54,7 +59,7 @@ router.post('/login', async (req, res) => {
 
 // 로그인 유저 정보 조회
 router.get("/loginInfo", async (req, res) => {
-    /* 
+    /*
     const accessToken = req.headers.authorization?.split(' ')[1] ?? '';
     
     // 시크릿키를 함께 넘겨 확인한다
@@ -82,8 +87,13 @@ router.post("/reissue", async (req, res) => {
     let sql = "SELECT id, nm name, id_FILE pic FROM EMPLOYEE WHERE id = ?; ";
     sql = maria.format(sql, [user.sub]);
     
-    console.log('reissue ', refreshToken);
+    // console.log('reissue ', refreshToken);
     user = await dbQueryAsync(sql);
+    /* user = {
+        id: '202303001',
+        name: '미야와키 사쿠라',
+        id_FILE: null,
+    } */
 
     const jwtToken = await jwt.sign(user);
     res.send({

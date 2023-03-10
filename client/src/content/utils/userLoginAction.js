@@ -75,10 +75,9 @@ export const logoutUser = async (refreshToken) => {
     });
 
     if(parseInt(Number(data.status)/100) === 2) {
-        const status = data.ok;
+        const status = data.statusText;
         const code = data.status;
-        const text = await data.text();
-        const json = text.length ? JSON.parse(text) : "";
+        const json = data.data;
         
         return { status, code, json };
     } else {
